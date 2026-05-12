@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<courses>
+    <course>
+        <id>1</id>
+        <name>Web Development</name>
+        <code>WD101</code>
+        <slots>30</slots>
+    </course>
+
+    <course>
+        <id>2</id>
+        <name>Database Systems</name>
+        <code>DB202</code>
+        <slots>25</slots>
+    </course>
+
+    <course>
+        <id>3</id>
+        <name>Networking Fundamentals</name>
+        <code>NT303</code>
+        <slots>20</slots>
+    </course>
+</courses>
