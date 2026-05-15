@@ -2,47 +2,89 @@
 session_start();
 include 'includes/db.php';
 
+if (isset($_SESSION['user_id'])) {
+    header('Location: ' . ($_SESSION['role'] === 'admin' ? 'Admin/dashboard.php' : 'dashboard.php'));
+    exit;
+}
+
 $message = "";
+$selectedRole = isset($_GET['role']) && in_array($_GET['role'], ['admin', 'student'], true) ? $_GET['role'] : '';
 
-if(isset($_POST['login'])) {
-    $email = $_POST['email'];
+if (isset($_POST['login'])) {
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
+    $selectedRole = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'student';
 
-    $sql = "SELECT * FROM users WHERE email='$email'";
-    $result = $conn->query($sql);
+    $stmt = $conn->prepare('SELECT id, fullname, password, role FROM users WHERE email = ?');
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if($result->num_rows > 0) {
+    if ($result && $result->num_rows === 1) {
         $user = $result->fetch_assoc();
 
-        if(password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['name'] = $user['fullname'];
+        $passwordMatches = password_verify($password, $user['password']);
+        $needsRehash = $passwordMatches && password_needs_rehash($user['password'], PASSWORD_DEFAULT);
 
-            if($user['role'] == 'admin') {
-                header('Location: admin/dashboard.php');
-            } else {
-                header('Location: dashboard.php');
+        if (!$passwordMatches && password_get_info($user['password'])['algo'] === 0) {
+            $passwordMatches = hash_equals($user['password'], $password);
+            $needsRehash = $passwordMatches;
+        }
+
+        if ($passwordMatches) {
+            if ($needsRehash) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                $update = $conn->prepare('UPDATE users SET password = ? WHERE id = ?');
+                $update->bind_param('si', $newHash, $user['id']);
+                $update->execute();
             }
-        } else {
-            $message = "Invalid Password";
+
+            if ($user['role'] !== $selectedRole) {
+                $message = 'This account is registered as a ' . $user['role'] . '. Please choose the correct login type.';
+            } else {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['name'] = $user['fullname'];
+
+                header('Location: ' . ($user['role'] === 'admin' ? 'Admin/dashboard.php' : 'dashboard.php'));
+                exit;
+            }
+        }
+
+        if (!$message) {
+            $message = 'Invalid password';
         }
     } else {
-        $message = "User not found";
+        $message = 'User not found';
     }
 }
 ?>
 
 <?php include 'includes/header.php'; ?>
 
-<h2>Login</h2>
+<h2><?php echo $selectedRole === 'admin' ? 'Admin Login' : ($selectedRole === 'student' ? 'Student Login' : 'Login'); ?></h2>
 
-<form method="POST">
+<p>
+    <a href="login.php?role=student">Student Login</a> |
+    <a href="login.php?role=admin">Admin Login</a>
+</p>
+
+<form method="POST" action="login.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
+    <label>
+        <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?> required>
+        Student
+    </label>
+    <label>
+        <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?> required>
+        Admin
+    </label>
     <input type="email" name="email" placeholder="Email" required>
     <input type="password" name="password" placeholder="Password" required>
     <button type="submit" name="login">Login</button>
 </form>
 
-<p><?php echo $message; ?></p>
+<?php if ($message): ?>
+    <p><?php echo htmlspecialchars($message); ?></p>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

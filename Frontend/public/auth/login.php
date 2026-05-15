@@ -5,7 +5,7 @@ include '../includes/config.php';
 
 $message = "";
 $messageType = 'error';
-$selectedRole = isset($_GET['role']) && $_GET['role'] === 'admin' ? 'admin' : 'student';
+$selectedRole = isset($_GET['role']) && in_array($_GET['role'], ['admin', 'student'], true) ? $_GET['role'] : '';
 
 if (isset($_GET['registered']) && $_GET['registered'] === '1') {
     $message = 'Registration successful. Please login.';
@@ -34,7 +34,22 @@ if (isset($_POST['login'])) {
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
 
-        if (password_verify($password, $user['password'])) {
+        $passwordMatches = password_verify($password, $user['password']);
+        $needsRehash = $passwordMatches && password_needs_rehash($user['password'], PASSWORD_DEFAULT);
+
+        if (!$passwordMatches && password_get_info($user['password'])['algo'] === 0) {
+            $passwordMatches = hash_equals($user['password'], $password);
+            $needsRehash = $passwordMatches;
+        }
+
+        if ($passwordMatches) {
+            if ($needsRehash) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                $update = $conn->prepare('UPDATE users SET password = ? WHERE id = ?');
+                $update->bind_param('si', $newHash, $user['id']);
+                $update->execute();
+            }
+
             if ($user['role'] !== $selectedRole) {
                 $message = 'This account is registered as a ' . $user['role'] . '. Please choose the correct login type.';
             } else {
@@ -57,16 +72,20 @@ if (isset($_POST['login'])) {
 ?>
 <?php include '../includes/header.php'; ?>
 <section class="auth-card">
-    <h1>Login</h1>
-    <p>Sign in as a student or administrator.</p>
-    <form method="post" action="login.php">
+    <h1><?php echo $selectedRole === 'admin' ? 'Admin Login' : ($selectedRole === 'student' ? 'Student Login' : 'Login'); ?></h1>
+    <p><?php echo $selectedRole ? 'Sign in as ' . ($selectedRole === 'admin' ? 'an admin' : 'a student') . '.' : 'Choose student or admin access.'; ?></p>
+    <div class="auth-actions">
+        <a class="btn <?php echo $selectedRole === 'student' ? 'btn-primary' : 'btn-secondary'; ?>" href="login.php?role=student">Student Login</a>
+        <a class="btn <?php echo $selectedRole === 'admin' ? 'btn-primary' : 'btn-secondary'; ?>" href="login.php?role=admin">Admin Login</a>
+    </div>
+    <form method="post" action="login.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
         <div class="role-choice" aria-label="Choose login type">
             <label>
-                <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?>>
+                <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?> required>
                 Student
             </label>
             <label>
-                <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?>>
+                <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?> required>
                 Admin
             </label>
         </div>
@@ -83,6 +102,13 @@ if (isset($_POST['login'])) {
     <?php if ($message): ?>
         <p class="form-note <?php echo $messageType; ?>"><?php echo $message; ?></p>
     <?php endif; ?>
-    <p class="form-note">Don't have a student account? <a href="register.php">Create one</a></p>
+    <p class="form-note">
+        Don't have an account?
+        <?php if ($selectedRole) { ?>
+            <a href="register.php?role=<?php echo $selectedRole; ?>">Register as <?php echo $selectedRole === 'admin' ? 'an admin' : 'a student'; ?></a>
+        <?php } else { ?>
+            <a href="register.php?role=student">Student register</a> or <a href="register.php?role=admin">admin register</a>
+        <?php } ?>
+    </p>
 </section>
 <?php include '../includes/footer.php'; ?>

@@ -30,8 +30,10 @@ $logged_in = isset($_SESSION['user_id']);
             <?php } ?>
             <a href="<?php echo BASE_URL; ?>/auth/logout.php">Logout</a>
         <?php } else { ?>
-            <a href="<?php echo BASE_URL; ?>/auth/login.php">Login</a>
-            <a href="<?php echo BASE_URL; ?>/auth/register.php">Register</a>
+            <a href="<?php echo BASE_URL; ?>/auth/login.php?role=student">Student Login</a>
+            <a href="<?php echo BASE_URL; ?>/auth/login.php?role=admin">Admin Login</a>
+            <a href="<?php echo BASE_URL; ?>/auth/register.php?role=student">Student Register</a>
+            <a href="<?php echo BASE_URL; ?>/auth/register.php?role=admin">Admin Register</a>
         <?php } ?>
     </nav>
 </header>

@@ -20,4 +20,32 @@
         <code>NT303</code>
         <slots>20</slots>
     </course>
+
+    <course>
+        <id>4</id>
+        <name>Graphic Design</name>
+        <code>GD401</code>
+        <slots>30</slots>
+    </course>
+
+    <course>
+        <id>5</id>
+        <name>Cyber Security</name>
+        <code>CS402</code>
+        <slots>30</slots>
+    </course>
+
+    <course>
+        <id>6</id>
+        <name>Machine Learning</name>
+        <code>ML403</code>
+        <slots>30</slots>
+    </course>
+
+    <course>
+        <id>7</id>
+        <name>Software Development</name>
+        <code>SD404</code>
+        <slots>30</slots>
+    </course>
 </courses>

@@ -16,7 +16,7 @@ $course_count = $conn->query("SELECT COUNT(*) as count FROM courses")->fetch_ass
 $registration_count = $conn->query("SELECT COUNT(*) as count FROM registrations")->fetch_assoc()['count'];
 ?>
 
-<section class="dashboard-hero">
+<section class="dashboard-hero admin-hero">
     <div>
         <p class="eyebrow">Admin Dashboard</p>
         <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['name']); ?>.</h1>
@@ -30,15 +30,18 @@ $registration_count = $conn->query("SELECT COUNT(*) as count FROM registrations"
 </section>
 
 <section class="summary-grid">
-    <article class="summary-card">
+    <article class="summary-card metric-blue">
+        <span class="metric-label">Students</span>
         <h3>Total Students</h3>
         <p class="stat"><?php echo $user_count; ?></p>
     </article>
-    <article class="summary-card">
+    <article class="summary-card metric-green">
+        <span class="metric-label">Catalog</span>
         <h3>Total Courses</h3>
         <p class="stat"><?php echo $course_count; ?></p>
     </article>
-    <article class="summary-card">
+    <article class="summary-card metric-amber">
+        <span class="metric-label">Activity</span>
         <h3>Total Registrations</h3>
         <p class="stat"><?php echo $registration_count; ?></p>
     </article>
@@ -46,16 +49,19 @@ $registration_count = $conn->query("SELECT COUNT(*) as count FROM registrations"
 
 <section class="dashboard-grid">
     <article class="dashboard-card">
+        <span class="card-kicker">Courses</span>
         <h2>Course Management</h2>
         <p>View, add, edit, and delete courses. Manage your complete course catalog.</p>
         <a class="btn btn-primary" href="manage_courses.php">Manage Courses</a>
     </article>
     <article class="dashboard-card">
+        <span class="card-kicker">Team</span>
         <h2>Admin Management</h2>
         <p>Create new administrator accounts and manage admin privileges.</p>
         <a class="btn btn-secondary" href="register_admin.php">Register Admin</a>
     </article>
     <article class="dashboard-card">
+        <span class="card-kicker">Enrollment</span>
         <h2>Student Registrations</h2>
         <p>View all student course registrations and enrollment data.</p>
         <a class="btn btn-secondary" href="registrations.php">View Registrations</a>

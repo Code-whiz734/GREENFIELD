@@ -1,23 +1,20 @@
 <?php
 session_start();
 
-if($_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: ../login.php');
+    exit;
 }
-?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
+include '../includes/header.php';
+?>
 
 <h2>Admin Dashboard</h2>
 
-<a class="btn" href="add_course.php">Add Course</a>
-<a class="btn" href="registrations.php">View Registrations</a>
+<p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>.</p>
+<ul>
+    <li><a href="add_course.php">Add Course</a></li>
+    <li><a href="registrations.php">View Registrations</a></li>
+</ul>
 
-</body>
-</html>
+<?php include '../includes/footer.php'; ?>

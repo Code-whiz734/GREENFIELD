@@ -7,14 +7,39 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+include '../includes/db.php';
 include '../includes/header.php';
 
-$xml = simplexml_load_file('../xml/courses.xml');
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $courses = [];
-foreach ($xml->course as $course) {
-    if ($query === '' || stripos($course->name . ' ' . $course->code, $query) !== false) {
-        $courses[] = $course;
+
+if ($query !== '') {
+    $search = '%' . $query . '%';
+    $stmt = $conn->prepare(
+        'SELECT c.id, c.course_name, c.course_code, c.slots, COUNT(r.id) AS registered
+         FROM courses c
+         LEFT JOIN registrations r ON r.course_id = c.id
+         WHERE c.course_name LIKE ? OR c.course_code LIKE ?
+         GROUP BY c.id, c.course_name, c.course_code, c.slots
+         ORDER BY c.course_name'
+    );
+    $stmt->bind_param('ss', $search, $search);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = $conn->query(
+        'SELECT c.id, c.course_name, c.course_code, c.slots, COUNT(r.id) AS registered
+         FROM courses c
+         LEFT JOIN registrations r ON r.course_id = c.id
+         GROUP BY c.id, c.course_name, c.course_code, c.slots
+         ORDER BY c.course_name'
+    );
+}
+
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $row['remaining_slots'] = max(0, (int)$row['slots'] - (int)$row['registered']);
+        $courses[] = $row;
     }
 }
 ?>
@@ -51,13 +76,17 @@ foreach ($xml->course as $course) {
         <tbody>
     <?php foreach ($courses as $course): ?>
         <tr>
-            <td><?php echo htmlspecialchars($course->name); ?></td>
-            <td><?php echo htmlspecialchars($course->code); ?></td>
-            <td><?php echo htmlspecialchars($course->slots); ?></td>
+            <td><?php echo htmlspecialchars($course['course_name']); ?></td>
+            <td><?php echo htmlspecialchars($course['course_code']); ?></td>
+            <td><?php echo htmlspecialchars($course['remaining_slots']); ?> of <?php echo htmlspecialchars($course['slots']); ?></td>
             <td>
-                <a class="btn btn-primary" href="register_course.php?id=<?php echo htmlspecialchars($course->id); ?>">
-                    Register
-                </a>
+                <?php if ($course['remaining_slots'] > 0): ?>
+                    <a class="btn btn-primary" href="register_course.php?id=<?php echo htmlspecialchars($course['id']); ?>">
+                        Register
+                    </a>
+                <?php else: ?>
+                    <span class="form-note">Full</span>
+                <?php endif; ?>
             </td>
         </tr>
     <?php endforeach; ?>
@@ -66,4 +95,4 @@ foreach ($xml->course as $course) {
     <?php endif; ?>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

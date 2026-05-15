@@ -4,9 +4,13 @@ include '../includes/db.php';
 include '../includes/config.php';
 
 $message = "";
+$selectedRole = isset($_GET['role']) && in_array($_GET['role'], ['admin', 'student'], true) ? $_GET['role'] : '';
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . BASE_URL . '/student/Dashboard.php');
+    $redirect = $_SESSION['role'] === 'admin'
+        ? BASE_URL . '/admin/dashboard.php'
+        : BASE_URL . '/student/Dashboard.php';
+    header('Location: ' . $redirect);
     exit;
 }
 
@@ -15,6 +19,7 @@ if (isset($_POST['register'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $selectedRole = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'student';
 
     if ($password !== $confirm_password) {
         $message = 'Passwords do not match';
@@ -28,11 +33,11 @@ if (isset($_POST['register'])) {
             $message = 'Email already exists';
         } else {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $insert = $conn->prepare('INSERT INTO users (fullname, email, password) VALUES (?, ?, ?)');
-            $insert->bind_param('sss', $fullname, $email, $hashedPassword);
+            $insert = $conn->prepare('INSERT INTO users (fullname, email, password, role) VALUES (?, ?, ?, ?)');
+            $insert->bind_param('ssss', $fullname, $email, $hashedPassword, $selectedRole);
 
             if ($insert->execute()) {
-                header('Location: ' . BASE_URL . '/auth/login.php?registered=1');
+                header('Location: ' . BASE_URL . '/auth/login.php?registered=1&role=' . $selectedRole);
                 exit;
             }
 
@@ -44,9 +49,23 @@ if (isset($_POST['register'])) {
 <?php include '../includes/header.php'; ?>
 
 <section class="auth-card">
-    <h1>Create your account</h1>
-    <p>Register now to manage your course enrollments.</p>
-    <form method="post" action="register.php">
+    <h1><?php echo $selectedRole === 'admin' ? 'Create Admin Account' : ($selectedRole === 'student' ? 'Create Student Account' : 'Create Account'); ?></h1>
+    <p><?php echo $selectedRole ? 'Register now to create ' . ($selectedRole === 'admin' ? 'an admin' : 'a student') . ' account.' : 'Choose student or admin registration.'; ?></p>
+    <div class="auth-actions">
+        <a class="btn <?php echo $selectedRole === 'student' ? 'btn-primary' : 'btn-secondary'; ?>" href="register.php?role=student">Student Register</a>
+        <a class="btn <?php echo $selectedRole === 'admin' ? 'btn-primary' : 'btn-secondary'; ?>" href="register.php?role=admin">Admin Register</a>
+    </div>
+    <form method="post" action="register.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
+        <div class="role-choice" aria-label="Choose account type">
+            <label>
+                <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?> required>
+                Student
+            </label>
+            <label>
+                <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?> required>
+                Admin
+            </label>
+        </div>
         <label>
             Full name
             <input type="text" name="fullname" placeholder="John Doe" required>
@@ -68,6 +87,13 @@ if (isset($_POST['register'])) {
     <?php if ($message): ?>
         <p class="form-note error"><?php echo $message; ?></p>
     <?php endif; ?>
-    <p class="form-note">Already registered? <a href="login.php">Login here</a></p>
+    <p class="form-note">
+        Already registered?
+        <?php if ($selectedRole) { ?>
+            <a href="login.php?role=<?php echo $selectedRole; ?>">Login as <?php echo $selectedRole === 'admin' ? 'an admin' : 'a student'; ?></a>
+        <?php } else { ?>
+            <a href="login.php?role=student">Student login</a> or <a href="login.php?role=admin">admin login</a>
+        <?php } ?>
+    </p>
 </section>
 <?php include '../includes/footer.php'; ?>

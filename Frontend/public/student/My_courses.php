@@ -9,21 +9,6 @@ include '../includes/db.php';
 include '../includes/header.php';
 
 $student_id = $_SESSION['user_id'];
-$sql = "SELECT course_id FROM registrations WHERE student_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('i', $student_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-// Load courses from XML
-$xml = simplexml_load_file('../xml/courses.xml');
-$courses = [];
-foreach ($xml->course as $course) {
-    $courses[(int)$course->id] = [
-        'name' => (string)$course->name,
-        'code' => (string)$course->code
-    ];
-}
 ?>
 <section class="hero-card">
     <h1>My Registered Courses</h1>
@@ -38,16 +23,30 @@ foreach ($xml->course as $course) {
             </tr>
         </thead>
         <tbody>
-            <?php while ($row = $result->fetch_assoc()): ?>
-                <?php $course_id = $row['course_id']; ?>
-                <?php if (isset($courses[$course_id])): ?>
+            <?php
+            $courses = $conn->prepare(
+                'SELECT c.course_name, c.course_code
+                 FROM registrations r
+                 INNER JOIN courses c ON c.id = r.course_id
+                 WHERE r.student_id = ?
+                 ORDER BY c.course_name'
+            );
+            $courses->bind_param('i', $student_id);
+            $courses->execute();
+            $course_result = $courses->get_result();
+            ?>
+            <?php if ($course_result->num_rows === 0): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($courses[$course_id]['name']); ?></td>
-                    <td><?php echo htmlspecialchars($courses[$course_id]['code']); ?></td>
+                    <td colspan="2">You have not registered for any courses yet.</td>
                 </tr>
-                <?php endif; ?>
+            <?php endif; ?>
+            <?php while ($row = $course_result->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['course_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['course_code']); ?></td>
+                </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 </section>
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

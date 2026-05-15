@@ -1,41 +1,43 @@
 <?php
-include '../includes/db.php';
+session_start();
 
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../login.php');
+    exit;
+}
+
+include '../includes/db.php';
 $message = "";
 
-if(isset($_POST['add'])) {
-    $name = $_POST['course_name'];
-    $code = $_POST['course_code'];
-    $slots = $_POST['slots'];
+if (isset($_POST['add'])) {
+    $name = trim($_POST['course_name']);
+    $code = trim($_POST['course_code']);
+    $slots = (int)$_POST['slots'];
 
-    $sql = "INSERT INTO courses(course_name,course_code,slots)
-            VALUES('$name','$code','$slots')";
+    $stmt = $conn->prepare('INSERT INTO courses (course_name, course_code, slots) VALUES (?, ?, ?)');
+    $stmt->bind_param('ssi', $name, $code, $slots);
 
-    if($conn->query($sql)) {
-        $message = "Course Added";
+    if ($stmt->execute()) {
+        $message = 'Course added successfully.';
+    } else {
+        $message = 'Failed to add course.';
     }
 }
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Course</title>
-    <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
+<?php include '../includes/header.php'; ?>
 
 <h2>Add Course</h2>
 
 <form method="POST">
     <input type="text" name="course_name" placeholder="Course Name" required>
     <input type="text" name="course_code" placeholder="Course Code" required>
-    <input type="number" name="slots" placeholder="Slots" required>
-
+    <input type="number" name="slots" placeholder="Slots" min="1" required>
     <button type="submit" name="add">Add Course</button>
 </form>
 
-<p><?php echo $message; ?></p>
+<?php if ($message): ?>
+    <p><?php echo htmlspecialchars($message); ?></p>
+<?php endif; ?>
 
-</body>
-</html>
+<?php include '../includes/footer.php'; ?>

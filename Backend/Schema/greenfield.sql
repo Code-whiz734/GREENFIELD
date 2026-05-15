@@ -29,7 +29,11 @@ INSERT INTO courses(course_name, course_code, slots)
 VALUES
 ('Web Development', 'WD101', 30),
 ('Database Systems', 'DB202', 25),
-('Networking Fundamentals', 'NT303', 20);
+('Networking Fundamentals', 'NT303', 20),
+('Graphic Design', 'GD401', 30),
+('Cyber Security', 'CS402', 30),
+('Machine Learning', 'ML403', 30),
+('Software Development', 'SD404', 30);
 
 
 CREATE TABLE admin(

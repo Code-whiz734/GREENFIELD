@@ -17,9 +17,11 @@ include '../includes/header.php';
 
 $student_id = $_SESSION['user_id'];
 
-// Load course count from XML
-$xml = simplexml_load_file('../xml/courses.xml');
-$total_courses = count($xml->course);
+$total_courses = 0;
+$course_count_result = $conn->query('SELECT COUNT(*) AS total FROM courses');
+if ($row = $course_count_result->fetch_assoc()) {
+    $total_courses = (int)$row['total'];
+}
 
 // Count student's registrations
 $stmt = $conn->prepare('SELECT COUNT(*) AS enrolled FROM registrations WHERE student_id = ?');
@@ -31,18 +33,17 @@ if ($row = $result->fetch_assoc()) {
     $enrolled = (int)$row['enrolled'];
 }
 
-// Determine available slots and registered courses
-$total_registration = 0;
-$stmt2 = $conn->prepare('SELECT COUNT(*) AS total FROM registrations');
-$stmt2->execute();
-$res2 = $stmt2->get_result();
-if ($row2 = $res2->fetch_assoc()) {
-    $total_registration = (int)$row2['total'];
+$available_courses = 0;
+$slot_result = $conn->query('SELECT COALESCE(SUM(slots), 0) AS total_slots FROM courses');
+$registration_result = $conn->query('SELECT COUNT(*) AS used_slots FROM registrations');
+if ($row = $slot_result->fetch_assoc()) {
+    $available_courses = (int)$row['total_slots'];
 }
-
-$available_courses = max(0, $total_courses - $total_registration);
+if ($row = $registration_result->fetch_assoc()) {
+    $available_courses = max(0, $available_courses - (int)$row['used_slots']);
+}
 ?>
-<section class="dashboard-hero">
+<section class="dashboard-hero student-hero">
     <div>
         <p class="eyebrow">Student Dashboard</p>
         <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['name']); ?>.</h1>
@@ -54,31 +55,37 @@ $available_courses = max(0, $total_courses - $total_registration);
     </div>
 </section>
 <section class="summary-grid">
-    <article class="summary-card">
+    <article class="summary-card metric-blue">
+        <span class="metric-label">Catalog</span>
         <h3>Total available courses</h3>
         <p class="stat"><?php echo $total_courses; ?></p>
     </article>
-    <article class="summary-card">
+    <article class="summary-card metric-green">
+        <span class="metric-label">Enrolled</span>
         <h3>Your enrolled courses</h3>
         <p class="stat"><?php echo $enrolled; ?></p>
     </article>
-    <article class="summary-card">
+    <article class="summary-card metric-amber">
+        <span class="metric-label">Open</span>
         <h3>Open course slots</h3>
         <p class="stat"><?php echo $available_courses; ?></p>
     </article>
 </section>
 <section class="dashboard-grid">
     <article class="dashboard-card">
+        <span class="card-kicker">Explore</span>
         <h2>Browse Courses</h2>
         <p>Explore available classes and register with one click.</p>
         <a class="btn btn-primary" href="Courses.php">View Courses</a>
     </article>
     <article class="dashboard-card">
+        <span class="card-kicker">Progress</span>
         <h2>My Courses</h2>
         <p>Review your current enrollments and registration status.</p>
         <a class="btn btn-secondary" href="My_courses.php">My Courses</a>
     </article>
     <article class="dashboard-card">
+        <span class="card-kicker">Session</span>
         <h2>Account</h2>
         <p>Manage your account or logout when finished.</p>
         <a class="btn btn-secondary" href="../auth/logout.php">Logout</a>

@@ -16,18 +16,25 @@ include '../includes/db.php';
 $student_id = $_SESSION['user_id'];
 $course_id = (int)$_GET['id'];
 
-// Load courses from XML to verify course exists
-$xml = simplexml_load_file('../xml/courses.xml');
-$course_exists = false;
-foreach ($xml->course as $course) {
-    if ((int)$course->id === $course_id) {
-        $course_exists = true;
-        break;
-    }
+$course = null;
+$course_stmt = $conn->prepare(
+    'SELECT c.id, c.slots, COUNT(r.id) AS registered
+     FROM courses c
+     LEFT JOIN registrations r ON r.course_id = c.id
+     WHERE c.id = ?
+     GROUP BY c.id, c.slots'
+);
+$course_stmt->bind_param('i', $course_id);
+$course_stmt->execute();
+$course_result = $course_stmt->get_result();
+if ($course_result) {
+    $course = $course_result->fetch_assoc();
 }
 
-if (!$course_exists) {
+if (!$course) {
     $message = 'Course not found.';
+} elseif ((int)$course['registered'] >= (int)$course['slots']) {
+    $message = 'This course is already full.';
 } else {
     $check = $conn->prepare('SELECT id FROM registrations WHERE student_id = ? AND course_id = ?');
     $check->bind_param('ii', $student_id, $course_id);
@@ -48,10 +55,10 @@ if (!$course_exists) {
     }
 }
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 <section class="hero-card">
     <h1>Course Registration</h1>
     <p><?php echo htmlspecialchars($message); ?></p>
     <a class="btn btn-primary" href="Courses.php">Back to Courses</a>
 </section>
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>
