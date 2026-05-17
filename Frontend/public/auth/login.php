@@ -1,6 +1,5 @@
 <?php
 session_start();
-include '../includes/db.php';
 include '../includes/config.php';
 
 $message = "";
@@ -26,57 +25,67 @@ if (isset($_POST['login'])) {
     $selectedRole = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'student';
     $messageType = 'error';
 
-    $stmt = $conn->prepare('SELECT id, fullname, password, role FROM users WHERE email = ?');
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-
-        $passwordMatches = password_verify($password, $user['password']);
-        $needsRehash = $passwordMatches && password_needs_rehash($user['password'], PASSWORD_DEFAULT);
-
-        if (!$passwordMatches && password_get_info($user['password'])['algo'] === 0) {
-            $passwordMatches = hash_equals($user['password'], $password);
-            $needsRehash = $passwordMatches;
+    if ($selectedRole === 'admin') {
+        if (hash_equals(ADMIN_EMAIL, $email) && hash_equals(ADMIN_PASSWORD, $password)) {
+            $_SESSION['user_id'] = 0;
+            $_SESSION['name'] = ADMIN_NAME;
+            $_SESSION['role'] = 'admin';
+            header('Location: ' . BASE_URL . '/admin/dashboard.php');
+            exit;
         }
 
-        if ($passwordMatches) {
-            if ($needsRehash) {
-                $newHash = password_hash($password, PASSWORD_DEFAULT);
-                $update = $conn->prepare('UPDATE users SET password = ? WHERE id = ?');
-                $update->bind_param('si', $newHash, $user['id']);
-                $update->execute();
+        $message = 'Invalid admin email or password';
+    } else {
+        include '../includes/db.php';
+        $stmt = $conn->prepare('SELECT id, fullname, password, role FROM users WHERE email = ?');
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
+
+            $passwordMatches = password_verify($password, $user['password']);
+            $needsRehash = $passwordMatches && password_needs_rehash($user['password'], PASSWORD_DEFAULT);
+
+            if (!$passwordMatches && password_get_info($user['password'])['algo'] === 0) {
+                $passwordMatches = hash_equals($user['password'], $password);
+                $needsRehash = $passwordMatches;
             }
 
-            if ($user['role'] !== $selectedRole) {
-                $message = 'This account is registered as a ' . $user['role'] . '. Please choose the correct login type.';
-            } else {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['name'] = $user['fullname'];
-                $_SESSION['role'] = $user['role'];
-                $redirect = $user['role'] === 'admin'
-                    ? BASE_URL . '/admin/dashboard.php'
-                    : BASE_URL . '/student/Dashboard.php';
-                header('Location: ' . $redirect);
-                exit;
+            if ($passwordMatches) {
+                if ($needsRehash) {
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $update = $conn->prepare('UPDATE users SET password = ? WHERE id = ?');
+                    $update->bind_param('si', $newHash, $user['id']);
+                    $update->execute();
+                }
+
+                if ($user['role'] !== 'student') {
+                    $message = 'Please use the shared admin login details.';
+                } else {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['name'] = $user['fullname'];
+                    $_SESSION['role'] = $user['role'];
+                    header('Location: ' . BASE_URL . '/student/Dashboard.php');
+                    exit;
+                }
             }
         }
-    }
 
-    if (!$message) {
-        $message = 'Invalid email or password';
+        if (!$message) {
+            $message = 'Invalid email or password';
+        }
     }
 }
 ?>
 <?php include '../includes/header.php'; ?>
 <section class="auth-card">
-    <h1><?php echo $selectedRole === 'admin' ? 'Admin Login' : ($selectedRole === 'student' ? 'Student Login' : 'Login'); ?></h1>
-    <p><?php echo $selectedRole ? 'Sign in as ' . ($selectedRole === 'admin' ? 'an admin' : 'a student') . '.' : 'Choose student or admin access.'; ?></p>
+    <h1>Greenfield Institute</h1>
+    <p>Course Registration System</p>
     <div class="auth-actions">
-        <a class="btn <?php echo $selectedRole === 'student' ? 'btn-primary' : 'btn-secondary'; ?>" href="login.php?role=student">Student Login</a>
-        <a class="btn <?php echo $selectedRole === 'admin' ? 'btn-primary' : 'btn-secondary'; ?>" href="login.php?role=admin">Admin Login</a>
+        <a class="btn btn-primary" href="login.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">Sign In</a>
+        <a class="btn btn-secondary" href="register.php?role=student">Register</a>
     </div>
     <form method="post" action="login.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
         <div class="role-choice" aria-label="Choose login type">
@@ -91,24 +100,20 @@ if (isset($_POST['login'])) {
         </div>
         <label>
             Email address
-            <input type="email" name="email" placeholder="you@example.com" required>
+            <input type="email" name="email" placeholder="you@greenfield.edu" required>
         </label>
         <label>
             Password
-            <input type="password" name="password" placeholder="Enter password" required>
+            <input type="password" name="password" placeholder="Password" required>
         </label>
-        <button type="submit" name="login" class="btn btn-primary">Login</button>
+        <button type="submit" name="login" class="btn btn-primary">Sign In</button>
     </form>
     <?php if ($message): ?>
         <p class="form-note <?php echo $messageType; ?>"><?php echo $message; ?></p>
     <?php endif; ?>
-    <p class="form-note">
-        Don't have an account?
-        <?php if ($selectedRole) { ?>
-            <a href="register.php?role=<?php echo $selectedRole; ?>">Register as <?php echo $selectedRole === 'admin' ? 'an admin' : 'a student'; ?></a>
-        <?php } else { ?>
-            <a href="register.php?role=student">Student register</a> or <a href="register.php?role=admin">admin register</a>
-        <?php } ?>
-    </p>
+    <div class="auth-demo">
+        <strong>Demo accounts:</strong>
+        <span>Harvey Spector - <?php echo htmlspecialchars(ADMIN_EMAIL); ?> / <?php echo htmlspecialchars(ADMIN_PASSWORD); ?></span>
+    </div>
 </section>
 <?php include '../includes/footer.php'; ?>

@@ -41,7 +41,6 @@ $root = $scriptDir === 'Admin' ? '..' : '.';
             <a href="<?php echo $root; ?>/login.php?role=student">Student Login</a>
             <a href="<?php echo $root; ?>/login.php?role=admin">Admin Login</a>
             <a href="<?php echo $root; ?>/register.php?role=student">Student Register</a>
-            <a href="<?php echo $root; ?>/register.php?role=admin">Admin Register</a>
         <?php endif; ?>
     </nav>
 </header>

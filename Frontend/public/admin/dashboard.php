@@ -24,7 +24,6 @@ $registration_count = $conn->query("SELECT COUNT(*) as count FROM registrations"
     </div>
     <div class="hero-actions">
         <a class="btn btn-primary" href="manage_courses.php">Manage Courses</a>
-        <a class="btn btn-secondary" href="register_admin.php">Register Admin</a>
         <a class="btn btn-secondary" href="registrations.php">View Registrations</a>
     </div>
 </section>
@@ -56,9 +55,9 @@ $registration_count = $conn->query("SELECT COUNT(*) as count FROM registrations"
     </article>
     <article class="dashboard-card">
         <span class="card-kicker">Team</span>
-        <h2>Admin Management</h2>
-        <p>Create new administrator accounts and manage admin privileges.</p>
-        <a class="btn btn-secondary" href="register_admin.php">Register Admin</a>
+        <h2>Shared Admin Access</h2>
+        <p>All administrators sign in with the same system credential.</p>
+        <a class="btn btn-secondary" href="../auth/login.php?role=admin">Admin Login</a>
     </article>
     <article class="dashboard-card">
         <span class="card-kicker">Enrollment</span>

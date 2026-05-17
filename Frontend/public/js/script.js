@@ -1,6 +1,6 @@
 /* ── In-memory database ─────────────────────── */
 let users = [
-  { id: 1, name: "Admin User",    email: "admin@greenfield.edu", password: "admin123", role: "admin"   },
+  { id: 1, name: "Admin User",    email: "admin@greenfield.edu", password: "admin@23", role: "admin"   },
   { id: 2, name: "Brenda Atieno", email: "brenda@greenfield.edu", password: "brenda123", role: "student" },
   { id: 3, name: "George Kmau",   email: "george@greenfield.edu", password: "george123", role: "student" },
   { id: 4, name: "Test User",     email: "muthem116@gmail.com",  password: "test1234", role: "student" },

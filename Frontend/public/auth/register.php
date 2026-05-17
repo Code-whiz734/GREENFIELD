@@ -1,6 +1,5 @@
 <?php
 session_start();
-include '../includes/db.php';
 include '../includes/config.php';
 
 $message = "";
@@ -21,9 +20,12 @@ if (isset($_POST['register'])) {
     $confirm_password = $_POST['confirm_password'];
     $selectedRole = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'student';
 
-    if ($password !== $confirm_password) {
+    if ($selectedRole === 'admin') {
+        $message = 'Admin accounts use one shared credential. Please use the admin login page.';
+    } elseif ($password !== $confirm_password) {
         $message = 'Passwords do not match';
     } else {
+        include '../includes/db.php';
         $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
         $stmt->bind_param('s', $email);
         $stmt->execute();
@@ -49,21 +51,20 @@ if (isset($_POST['register'])) {
 <?php include '../includes/header.php'; ?>
 
 <section class="auth-card">
-    <h1><?php echo $selectedRole === 'admin' ? 'Create Admin Account' : ($selectedRole === 'student' ? 'Create Student Account' : 'Create Account'); ?></h1>
-    <p><?php echo $selectedRole ? 'Register now to create ' . ($selectedRole === 'admin' ? 'an admin' : 'a student') . ' account.' : 'Choose student or admin registration.'; ?></p>
+    <h1>Greenfield Institute</h1>
+    <p>Course Registration System</p>
     <div class="auth-actions">
-        <a class="btn <?php echo $selectedRole === 'student' ? 'btn-primary' : 'btn-secondary'; ?>" href="register.php?role=student">Student Register</a>
-        <a class="btn <?php echo $selectedRole === 'admin' ? 'btn-primary' : 'btn-secondary'; ?>" href="register.php?role=admin">Admin Register</a>
+        <a class="btn btn-secondary" href="login.php?role=student">Sign In</a>
+        <a class="btn btn-primary" href="register.php?role=student">Register</a>
     </div>
+    <?php if ($selectedRole === 'admin'): ?>
+        <p class="form-note">Admin account creation is disabled because admin access is shared.</p>
+    <?php else: ?>
     <form method="post" action="register.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
         <div class="role-choice" aria-label="Choose account type">
             <label>
                 <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?> required>
                 Student
-            </label>
-            <label>
-                <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?> required>
-                Admin
             </label>
         </div>
         <label>
@@ -72,28 +73,25 @@ if (isset($_POST['register'])) {
         </label>
         <label>
             Email address
-            <input type="email" name="email" placeholder="you@example.com" required>
+            <input type="email" name="email" placeholder="you@greenfield.edu" required>
         </label>
         <label>
             Password
-            <input type="password" name="password" placeholder="Enter password" required>
+            <input type="password" name="password" placeholder="Password" required>
         </label>
         <label>
             Confirm password
-            <input type="password" name="confirm_password" placeholder="Repeat password" required>
+            <input type="password" name="confirm_password" placeholder="Confirm password" required>
         </label>
         <button type="submit" name="register" class="btn btn-primary">Register</button>
     </form>
+    <?php endif; ?>
     <?php if ($message): ?>
         <p class="form-note error"><?php echo $message; ?></p>
     <?php endif; ?>
-    <p class="form-note">
-        Already registered?
-        <?php if ($selectedRole) { ?>
-            <a href="login.php?role=<?php echo $selectedRole; ?>">Login as <?php echo $selectedRole === 'admin' ? 'an admin' : 'a student'; ?></a>
-        <?php } else { ?>
-            <a href="login.php?role=student">Student login</a> or <a href="login.php?role=admin">admin login</a>
-        <?php } ?>
-    </p>
+    <div class="auth-demo">
+        <strong>Admin access:</strong>
+        <span>All admins use <?php echo htmlspecialchars(ADMIN_EMAIL); ?> / <?php echo htmlspecialchars(ADMIN_PASSWORD); ?></span>
+    </div>
 </section>
 <?php include '../includes/footer.php'; ?>

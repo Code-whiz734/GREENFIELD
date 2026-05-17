@@ -17,7 +17,10 @@ if (isset($_POST['register'])) {
     $role = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'student';
     $selectedRole = $role;
 
-    $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
+    if ($role === 'admin') {
+        $message = 'Admin accounts use one shared credential. Please use the admin login page.';
+    } else {
+        $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
     $stmt->bind_param('s', $email);
     $stmt->execute();
     $stmt->store_result();
@@ -35,6 +38,7 @@ if (isset($_POST['register'])) {
 
         $message = 'Registration failed. Please try again.';
     }
+    }
 }
 ?>
 
@@ -44,23 +48,23 @@ if (isset($_POST['register'])) {
 
 <p>
     <a href="register.php?role=student">Student Register</a> |
-    <a href="register.php?role=admin">Admin Register</a>
+    <a href="login.php?role=admin">Admin Login</a>
 </p>
 
+<?php if ($selectedRole === 'admin'): ?>
+    <p>Admin account creation is disabled. Use the shared admin credential.</p>
+<?php else: ?>
 <form method="POST" action="register.php<?php echo $selectedRole ? '?role=' . $selectedRole : ''; ?>">
     <label>
         <input type="radio" name="role" value="student" <?php echo $selectedRole === 'student' ? 'checked' : ''; ?> required>
         Student
-    </label>
-    <label>
-        <input type="radio" name="role" value="admin" <?php echo $selectedRole === 'admin' ? 'checked' : ''; ?> required>
-        Admin
     </label>
     <input type="text" name="fullname" placeholder="Full Name" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="password" name="password" placeholder="Password" required>
     <button type="submit" name="register">Register</button>
 </form>
+<?php endif; ?>
 
 <?php if ($message): ?>
     <p><?php echo htmlspecialchars($message); ?></p>

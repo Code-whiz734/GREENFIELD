@@ -16,6 +16,17 @@ include '../includes/db.php';
 include '../includes/header.php';
 
 $student_id = $_SESSION['user_id'];
+$student = [
+    'fullname' => $_SESSION['name'] ?? '',
+];
+
+$student_stmt = $conn->prepare('SELECT fullname FROM users WHERE id = ?');
+$student_stmt->bind_param('i', $student_id);
+$student_stmt->execute();
+$student_result = $student_stmt->get_result();
+if ($row = $student_result->fetch_assoc()) {
+    $student = $row;
+}
 
 $total_courses = 0;
 $course_count_result = $conn->query('SELECT COUNT(*) AS total FROM courses');
@@ -46,7 +57,7 @@ if ($row = $registration_result->fetch_assoc()) {
 <section class="dashboard-hero student-hero">
     <div>
         <p class="eyebrow">Student Dashboard</p>
-        <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['name']); ?>.</h1>
+        <h1>Welcome back, <?php echo htmlspecialchars($student['fullname']); ?>.</h1>
         <p class="subtitle">Manage your registrations, review current courses, and stay on top of your learning path.</p>
     </div>
     <div class="hero-actions">
@@ -87,8 +98,8 @@ if ($row = $registration_result->fetch_assoc()) {
     <article class="dashboard-card">
         <span class="card-kicker">Session</span>
         <h2>Account</h2>
-        <p>Manage your account or logout when finished.</p>
-        <a class="btn btn-secondary" href="../auth/logout.php">Logout</a>
+        <p>View your personal details and update your account information.</p>
+        <a class="btn btn-secondary" href="Account.php">Manage your account</a>
     </article>
 </section>
 <?php include '../includes/footer.php'; ?>
